@@ -1,5 +1,5 @@
 # MusicalCubes
-Source for the Interactive Sound Installation, MusicaCubes.
+Source for the Interactive Sound Installation, MusicalCubes.
 This is a openframeworks project. http://openframeworks.cc/
 
 # Dependency
