@@ -29,6 +29,7 @@ class ofApp : public ofBaseApp{
 
 		void onCubeTriggered(vector <int> &args);
 		void onCopyingDone(CopyBridgeEventArgs& args);
+		void setTempo(int &bpm);
 		void toggleSequencer(bool &value);
 
 		void sendTrigger(uint8_t cube, uint8_t effect);
@@ -51,7 +52,8 @@ class ofApp : public ofBaseApp{
         const int baudrate = 9600;
 		ofSerial serial;
 
-		static const int nrCubes = 2;
+		static const int nrCubes = 4;
+		static const int nrOfCubeRows = 2;
 		vector<Cube> cubes;
 		vector<CopyBridge> bridges;
 
@@ -59,4 +61,5 @@ class ofApp : public ofBaseApp{
 
 		ofxPanel gui;
 		ofxToggle run;
+		ofxIntSlider tempo;
 };

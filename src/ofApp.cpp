@@ -21,10 +21,14 @@ void ofApp::setup(){
     gui.setup();
     run.addListener(this, &ofApp::toggleSequencer);
     gui.add(run.setup("run sequencer", false));
+    tempo.addListener(this, &ofApp::setTempo);
+    gui.add(tempo.setup("tempo", 120, 80, 140));
 }
 
 void ofApp::exit(){
     serial.close();
+    run.removeListener(this, &ofApp::toggleSequencer);
+    tempo.removeListener(this, &ofApp::setTempo);
     ofRemoveListener(Cube::cubeTriggered, this, &ofApp::onCubeTriggered);
     ofRemoveListener(CopyBridge::copyingDone, this, &ofApp::onCopyingDone);
 }
@@ -33,7 +37,7 @@ void ofApp::exit(){
 void ofApp::update(){
     handleSerial();
     updateCubes();
-//    seq->updateSeq();
+    seq->updateSeq();
 //    seq->run = run;
 }
 
@@ -87,6 +91,10 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
+void ofApp::setTempo(int &bpm){
+    seq->setBPM(bpm);
+}
+
 void ofApp::toggleSequencer(bool &value){
         if(value){
             seq->start();
@@ -97,6 +105,7 @@ void ofApp::toggleSequencer(bool &value){
 
 void ofApp::onCubeTriggered(vector <int>& args)
 {
+//    ofLog() << "cube object Triggered from sequencer";
     sendTrigger(args[0], args[1]);
 }
 
@@ -151,7 +160,6 @@ void ofApp::sendCopyFinished(uint8_t from, uint8_t to)
     serial.writeBytes(&message[0], 5);
 }
 
-
 bool ofApp::connectToArduino(){
     vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
     float stamp = ofGetElapsedTimef();
@@ -181,6 +189,16 @@ void ofApp::handleSerial()
       uint8_t newLine;
 //      ofLog() << "Command received";
       uint8_t command = readChar();
+      if(command == 't'){
+          unsigned char c = readChar();
+          string message;
+          while(c != '\n'){
+              message.push_back(c);
+              c = readChar();
+          }
+          ofLog() <<"message: " << message.c_str();
+          return;
+      }
       uint8_t affectedCube = readChar();
 
       if(command == '/'){//Cube is triggered
@@ -216,6 +234,10 @@ void ofApp::handleSerial()
             createBride(affectedCube, affectedCube2);
             ofLog() << "Copying requested between " << (int) affectedCube << " and " << (int) affectedCube2;
         }
+      }else if(command == '>'){//Start request
+        if(affectedCube == '\n'){
+            seq->start();
+        }
       }
     }
   }
@@ -238,11 +260,12 @@ void ofApp::positionCubes()
     int margin = 50;
     int width = ofGetWidth();
     width -= 2*margin;
-    int interval = width / nrCubes;
-    int startPos = margin + interval/4;
+    int interval = width / (nrCubes/nrOfCubeRows);
+    int startPosX = margin + interval/4;
+    int startPosY = margin;
 
     for(int i = 0; i < nrCubes; i++){
-        cubes[i].rectangle.set(startPos+i*interval, margin, interval/2, interval/2);
+        cubes[i].rectangle.set(startPosX+((i%nrOfCubeRows)*interval), startPosY+(i/nrOfCubeRows)*interval, interval/2, interval/2);
         //cubes[i].draw();
     }
 }
