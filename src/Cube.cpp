@@ -50,12 +50,28 @@ void Cube::clicked(ofMouseEventArgs& args)
             app->sendCubeOff(index);
         }else{
             int clickedPoint = ofMap(args.y - rectangle.getY(), 0, rectangle.getHeight(), 0, 255, true);
-            color = ofColor(0, clickedPoint, 255-clickedPoint);
             currentEffect = clickedPoint;
             active = true;
 
         }
     }
+}
+
+void Cube::draw(){
+    color = ofApp::getRainbowColor(currentEffect);
+    if(recordRequested){
+        ofSetColor(255,255,0);
+    }else if(recording){
+        ofSetColor(255,0,0);
+    }else if(active){
+        ofSetColor(color);
+    }else{
+        ofSetColor(240, 240, 240);
+    }
+    ofRect(rectangle);
+    ofSetColor(0,0,0);
+    ofDrawBitmapString(ofToString((int)currentEffect), rectangle.getPosition());
+
 }
 
 void Cube::receiveBeat()
@@ -68,3 +84,5 @@ void Cube::receiveBeat()
         ofNotifyEvent(cubeTriggered, args);
     }
 }
+
+

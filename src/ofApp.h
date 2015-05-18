@@ -33,11 +33,13 @@ class ofApp : public ofBaseApp{
 		void toggleSequencer(bool &value);
 
 		void sendTrigger(uint8_t cube, uint8_t effect);
+		void sendDimmedColor(uint8_t cube, uint8_t effect);
 		void sendCubeOff(uint8_t cube);
 		void sendRecordStart(uint8_t cube);
 		void sendRecordStop(uint8_t cube);
 		void sendRecordTimeout(uint8_t cube);
 		void sendCopyFinished(uint8_t from, uint8_t to);
+		void sendMessage(const char * msg);
 
 		bool connectToArduino();
 		void handleSerial();
@@ -46,6 +48,7 @@ class ofApp : public ofBaseApp{
 		void positionCubes();
 		void drawCubes();
 		void drawCopying();
+		static ofColor getRainbowColor(uint8_t WheelPos);
 
 		void createBride(int from, int to);
 

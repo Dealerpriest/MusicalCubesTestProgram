@@ -18,6 +18,7 @@ class Cube
         void setup(int index, ofApp* app);
         void clicked(ofMouseEventArgs& args);
         void receiveBeat();
+        void draw();
 
         //variables
         int index;

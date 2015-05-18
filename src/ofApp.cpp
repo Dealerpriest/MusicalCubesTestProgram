@@ -3,7 +3,11 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     serial.listDevices();
-    ofLog() << "connect To Arduino returned: " << connectToArduino();
+    bool connectionStatus = connectToArduino();
+    ofLog() << "Connect To Arduino returned: " << connectionStatus;
+    if(!connectionStatus){
+        ofExit();
+    }
 
     cubes = vector<Cube>(nrCubes, Cube());
     //place the cubes
@@ -35,7 +39,9 @@ void ofApp::exit(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    handleSerial();
+    if(serial.isInitialized()){
+        handleSerial();
+    }
     updateCubes();
     seq->updateSeq();
 //    seq->run = run;
@@ -124,6 +130,14 @@ void ofApp::sendTrigger(uint8_t cube, uint8_t effect){
     ofLog() << "Cube: " << (int) cube << " triggered " << (int) effect;
 }
 
+void ofApp::sendDimmedColor(uint8_t cube, uint8_t effect){
+    uint8_t message[5] = {'#', '?', 0, 0, '\n'};
+    message[2] = cube;
+    message[3] = effect;
+    serial.writeBytes(&message[0], 5);
+    ofLog() << "Cube: " << (int) cube << " dimmed color " << (int) effect;
+}
+
 void ofApp::sendCubeOff(uint8_t cube)
 {
     uint8_t message[4] = {'#', 92, 0, '\n'};
@@ -160,17 +174,39 @@ void ofApp::sendCopyFinished(uint8_t from, uint8_t to)
     serial.writeBytes(&message[0], 5);
 }
 
+void ofApp::sendMessage(const char* msg)
+{
+    serial.writeByte('#');
+    serial.writeByte('t');
+//    unsigned char * tmpstr = strdup(msg);
+    serial.writeBytes((unsigned char*) msg, strlen(msg));
+    serial.writeByte('\n');
+//    free(tmpstr);
+}
+
+
 bool ofApp::connectToArduino(){
     vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
-    float stamp = ofGetElapsedTimef();
+
+
     for(int i = 0; i < deviceList.size(); i++){
         if(serial.setup(i, baudrate)){
-            while(ofGetElapsedTimef() < stamp + i*2 +2){}//Spend two seconds checking each port
-            ofLog() << "checking port: " << i;
-            if(serial.readByte() == 'A'){
-                ofLog() << "received an A!";
-                serial.writeByte('A');
-                return true;
+            ofSleepMillis(1000);
+            ofLog() << "Checking port: " << i;
+            serial.flush();
+            sendMessage("a");
+            float stamp = ofGetElapsedTimef();
+            while(ofGetElapsedTimef() < stamp + 0.2f ){//Spend two seconds checking each port
+                if(serial.available() > 3){
+                    if(serial.readByte() == '#'){
+                        if(serial.readByte() == 't'){
+                            if(serial.readByte() == 'a'){
+                                ofLog() << "received an a!";
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
             serial.flush();
             serial.close();
@@ -208,6 +244,7 @@ void ofApp::handleSerial()
             cubes[affectedCube].active = true;
             cubes[affectedCube].currentEffect = effect;
             ofLog() << "IR on Cube " << (int) affectedCube << "triggered";
+            sendDimmedColor(affectedCube, effect);
         }
       }else if(command == 92){//Cube turned off
         newLine = readChar();
@@ -291,16 +328,39 @@ void ofApp::drawCopying()
 
 void ofApp::drawCubes(){
     for(int i = 0; i < nrCubes; i++){
-        if(cubes[i].recordRequested){
-            ofSetColor(255,255,0);
-        }else if(cubes[i].recording){
-            ofSetColor(255,0,0);
-        }else if(cubes[i].active){
-            ofSetColor(cubes[i].color);
-        }else{
-            ofSetColor(240, 240, 240);
-        }
-        ofRect(cubes[i].rectangle);
+        cubes[i].draw();
+//        if(cubes[i].recordRequested){
+//            ofSetColor(255,255,0);
+//        }else if(cubes[i].recording){
+//            ofSetColor(255,0,0);
+//        }else if(cubes[i].active){
+//            ofSetColor(cubes[i].color);
+//        }else{
+//            ofSetColor(240, 240, 240);
+//        }
+//        ofRect(cubes[i].rectangle);
     }
 }
 
+ofColor ofApp::getRainbowColor(uint8_t WheelPos) {
+    ofColor color;
+    if(WheelPos < 85) {
+        color.r = 255 - WheelPos * 3;
+        color.g = 0;
+        color.b = WheelPos * 3;
+//        return Adafruit_NeoPixel::Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    } else if(WheelPos < 170) {
+        WheelPos -= 85;
+        color.r = 0;
+        color.g = WheelPos * 3;
+        color.b = 255 - WheelPos * 3;
+//        return Adafruit_NeoPixel::Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    } else {
+        WheelPos -= 170;
+        color.r = WheelPos * 3;
+        color.g = 255 - WheelPos * 3;
+        color.b = 0;
+//        return Adafruit_NeoPixel::Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+    }
+    return color;
+}
